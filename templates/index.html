@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>ATS Resume Analyzer 📄</h1>
+        <p>Upload your resume (PDF or DOCX) to see your ATS-friendliness score.</p>
+        
+        <form id="upload-form">
+            <input type="file" id="resume-file" name="resume" accept=".pdf,.docx" required>
+            <button type="submit">Analyze My Resume</button>
+        </form>
+
+        <div id="results-container" class="hidden">
+            <h2>Analysis Results</h2>
+            <div class="score-circle" id="score-circle">
+                <span id="score">0</span>
+            </div>
+            <h3>Suggestions for Improvement:</h3>
+            <ul id="suggestions-list"></ul>
+        </div>
+
+        <div id="loading" class="hidden">
+            <p>Analyzing... please wait.</p>
+        </div>
+
+        <div id="error" class="hidden"></div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

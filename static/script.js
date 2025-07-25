@@ -45,9 +45,9 @@ function displayResults(data) {
     
     // Change score circle color based on score
     if (data.score < 50) {
-        scoreCircle.style.background = 'linear-gradient(135deg, #dc3545, #c82333)'; // Red
+        scoreCircle.style.background = 'linear-gradient(135deg, #dc3545, #f0273bff)'; // Red
     } else if (data.score < 80) {
-        scoreCircle.style.background = 'linear-gradient(135deg, #ffc107, #e0a800)'; // Yellow
+        scoreCircle.style.background = 'linear-gradient(135deg, #ffc107, #ad9240ff)'; // Yellow
     } else {
         scoreCircle.style.background = 'linear-gradient(135deg, #28a745, #218838)'; // Green
     }

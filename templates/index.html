@@ -3,34 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATS Resume Analyzer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>ATS Resume Analyzer 📄</h1>
-        <p>Upload Your resume (PDF or DOCX) to see your ATS-friendliness score.</p>
+    <title>Next-Gen ATS Resume Analyzer</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom styles for the application */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom file input button styling */
+        .file-input-label {
+            transition: all 0.3s ease;
+        }
+
+        /* Animation for elements fading in */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Staggered animation for suggestion list items */
+        .suggestion-item {
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: slideIn 0.5s forwards ease-out;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
         
-        <form id="upload-form">
-            <input type="file" id="resume-file" name="resume" accept=".pdf,.docx" required>
-            <button type="submit">Analyze My Resume</button>
-        </form>
+        /* Transition for view switching */
+        .view {
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+        .view.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+            position: absolute;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
 
-        <div id="results-container" class="hidden">
-            <h2>Analysis Results</h2>
-            <div class="score-circle" id="score-circle">
-                <span id="score">0</span>
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        
+        <div id="main-container" class="w-full max-w-2xl mx-auto">
+
+            <div id="upload-view" class="view w-full">
+                <div class="bg-slate-800/70 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl shadow-black/20 text-center fade-in">
+                    <h1 class="text-4xl md:text-5xl font-bold text-white mb-3">ATS Resume Analyzer 📄</h1>
+                    <p class="text-slate-400 mb-8 max-w-md mx-auto">Upload your resume to see how well it scores against Applicant Tracking Systems.</p>
+                    
+                    <form id="upload-form">
+                        <label for="resume-file" class="file-input-label group relative flex justify-center items-center w-full h-48 bg-slate-800 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:bg-slate-700 hover:border-slate-500 transition-all duration-300">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12 text-slate-500 group-hover:text-indigo-400 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p class="mt-2 text-sm text-slate-400"><span class="font-semibold text-indigo-400">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-slate-500">PDF or DOCX</p>
+                                <p id="file-name" class="mt-4 text-sm font-medium text-green-400"></p>
+                            </div>
+                            <input type="file" id="resume-file" name="resume" class="sr-only" accept=".pdf,.docx" required>
+                        </label>
+                        
+                        <button type="submit" id="analyze-button" disabled class="mt-8 w-full bg-indigo-600 text-white font-bold py-4 px-4 rounded-lg shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-300 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed">
+                            Analyze My Resume
+                        </button>
+                    </form>
+                </div>
             </div>
-            <h3>Suggestions for Improvement:</h3>
-            <ul id="suggestions-list"></ul>
+
+            <div id="loading-view" class="view hidden w-full">
+                <div class="bg-slate-800/70 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl shadow-black/20 text-center">
+                    <div class="flex justify-center items-center mb-6">
+                        <svg class="animate-spin h-10 w-10 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Analyzing your resume...</h2>
+                    <p class="text-slate-400 mt-2">Our AI is scanning for keywords, formatting, and more.</p>
+                </div>
+            </div>
+
+            <div id="results-view" class="view hidden w-full">
+                <div class="bg-slate-800/70 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl shadow-black/20">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-white">Analysis Results</h2>
+                        <button id="analyze-another-btn" class="text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">Analyze Another &rarr;</button>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div class="md:col-span-1 flex flex-col items-center justify-center bg-slate-800 p-6 rounded-xl border border-slate-700">
+                            <div class="relative w-40 h-40">
+                                <svg class="w-full h-full" viewBox="0 0 100 100">
+                                    <circle class="text-slate-700" stroke-width="10" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50"/>
+                                    <circle id="score-circle-progress" class="transition-all duration-1000 ease-out"
+                                        stroke-width="10" stroke-linecap="round" stroke="currentColor" fill="transparent"
+                                        r="45" cx="50" cy="50"
+                                        style="transform: rotate(-90deg); transform-origin: 50% 50%;"
+                                    />
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span id="score" class="text-4xl font-extrabold text-white">0</span>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-lg font-semibold text-white">ATS Score</p>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <h3 class="text-xl font-bold text-white mb-4">Suggestions for Improvement:</h3>
+                            <ul id="suggestions-list" class="space-y-3">
+                                </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-container" class="hidden mt-6 bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-center">
+                <p id="error-message"></p>
+            </div>
+
         </div>
 
-        <div id="loading" class="hidden">
-            <p>Analyzing... please wait.</p>
-        </div>
-
-        <div id="error" class="hidden"></div>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DOM Element References ---
+            const uploadView = document.getElementById('upload-view');
+            const loadingView = document.getElementById('loading-view');
+            const resultsView = document.getElementById('results-view');
+            const errorContainer = document.getElementById('error-container');
+            const errorMessage = document.getElementById('error-message');
+
+            const uploadForm = document.getElementById('upload-form');
+            const resumeFile = document.getElementById('resume-file');
+            const fileNameDisplay = document.getElementById('file-name');
+            const analyzeButton = document.getElementById('analyze-button');
+            const analyzeAnotherBtn = document.getElementById('analyze-another-btn');
+
+            const scoreSpan = document.getElementById('score');
+            const suggestionsList = document.getElementById('suggestions-list');
+            const scoreCircleProgress = document.getElementById('score-circle-progress');
+            const circleCircumference = 2 * Math.PI * 45; // 2 * pi * radius
+
+            // --- State Management ---
+            const views = {
+                upload: uploadView,
+                loading: loadingView,
+                results: resultsView
+            };
+
+            function showView(viewName) {
+                Object.keys(views).forEach(key => {
+                    if (key === viewName) {
+                        views[key].classList.remove('hidden');
+                    } else {
+                        views[key].classList.add('hidden');
+                    }
+                });
+                errorContainer.classList.add('hidden');
+            }
+
+            // --- Event Listeners ---
+            resumeFile.addEventListener('change', () => {
+                if (resumeFile.files.length > 0) {
+                    fileNameDisplay.textContent = resumeFile.files[0].name;
+                    analyzeButton.disabled = false;
+                } else {
+                    fileNameDisplay.textContent = '';
+                    analyzeButton.disabled = true;
+                }
+            });
+
+            uploadForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                showView('loading');
+
+                const formData = new FormData();
+                formData.append('resume', resumeFile.files[0]);
+
+                try {
+                    const response = await fetch('/analyze', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        displayResults(result);
+                    } else {
+                        displayError(result.error || 'An unknown error occurred.');
+                    }
+
+                } catch (error) {
+                    console.error('Fetch Error:', error);
+                    displayError('Failed to connect to the server. Please try again.');
+                }
+            });
+
+            analyzeAnotherBtn.addEventListener('click', resetUI);
+
+            // --- UI Update Functions ---
+            function displayResults(data) {
+                showView('results');
+                
+                // Animate score and progress circle
+                animateScore(data.score);
+                updateProgressCircle(data.score);
+
+                // Populate suggestions with staggered animation
+                suggestionsList.innerHTML = '';
+                if (data.suggestions && data.suggestions.length > 0) {
+                    data.suggestions.forEach((suggestion, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'suggestion-item bg-slate-700/50 p-4 rounded-lg flex items-start space-x-3';
+                        li.style.animationDelay = `${index * 100}ms`;
+                        
+                        const icon = `<div class="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-500/30 flex items-center justify-center">
+                                        <svg class="h-4 w-4 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                      </div>`;
+
+                        li.innerHTML = `${icon}<span class="text-slate-300">${suggestion}</span>`;
+                        suggestionsList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.className = 'suggestion-item bg-green-900/50 p-4 rounded-lg text-green-300';
+                    li.textContent = "Excellent! Your resume seems highly ATS-friendly.";
+                    suggestionsList.appendChild(li);
+                }
+            }
+
+            function displayError(message) {
+                showView('upload'); // Go back to upload view on error
+                errorMessage.textContent = message;
+                errorContainer.classList.remove('hidden');
+            }
+
+            function resetUI() {
+                uploadForm.reset();
+                fileNameDisplay.textContent = '';
+                analyzeButton.disabled = true;
+                showView('upload');
+            }
+
+            // --- Animation Functions ---
+            function animateScore(finalScore) {
+                let currentScore = 0;
+                const duration = 1000; // 1 second
+                // Prevent division by zero if finalScore is 0
+                const stepTime = finalScore > 0 ? Math.abs(Math.floor(duration / finalScore)) : duration;
+                
+                const timer = setInterval(() => {
+                    currentScore += 1;
+                    if (currentScore >= finalScore) {
+                        clearInterval(timer);
+                        scoreSpan.textContent = finalScore; // Ensure it ends on the exact score
+                    } else {
+                        scoreSpan.textContent = currentScore;
+                    }
+                }, stepTime);
+
+                if (finalScore === 0) {
+                    scoreSpan.textContent = 0;
+                }
+            }
+
+            function updateProgressCircle(score) {
+                const offset = circleCircumference - (score / 100) * circleCircumference;
+                scoreCircleProgress.style.strokeDasharray = `${circleCircumference} ${circleCircumference}`;
+                scoreCircleProgress.style.strokeDashoffset = offset;
+
+                // Update color based on score
+                if (score < 50) {
+                    scoreCircleProgress.classList.remove('text-amber-400', 'text-green-400');
+                    scoreCircleProgress.classList.add('text-red-500');
+                } else if (score < 80) {
+                    scoreCircleProgress.classList.remove('text-red-500', 'text-green-400');
+                    scoreCircleProgress.classList.add('text-amber-400');
+                } else {
+                    scoreCircleProgress.classList.remove('text-red-500', 'text-amber-400');
+                    scoreCircleProgress.classList.add('text-green-400');
+                }
+            }
+
+            // --- Initial State ---
+            showView('upload');
+        });
+    </script>
 </body>
 </html>

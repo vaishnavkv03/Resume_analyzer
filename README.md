@@ -51,7 +51,3 @@ The application follows a simple architecture:
 Frontend (HTML, CSS, JS): The user interacts with a form on the main page. A resume file is uploaded, and the client-side JavaScript sends this file to the Python backend.
 Backend (Python): The Python server receives the uploaded resume. It parses the document to extract text and data. This data is then analyzed against a set of criteria to determine the ATS compatibility score, identify problems, and generate recommendations.
 Result Display: The Python backend sends the analysis results back to the frontend, which dynamically updates the page to display the score, problems, and recommendations to the user.
-
-🤝 Contributing
-We welcome contributions to improve this project! If you have suggestions or want to report a bug, please feel free to open an issue or submit a pull request.
-

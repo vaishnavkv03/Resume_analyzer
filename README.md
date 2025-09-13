@@ -17,9 +17,9 @@ CSS (7%): Provides the styling and layout for the user interface.
 
 🚀 Getting Started
 Follow these steps to get a copy of the project up and running on your local machine.
-Prerequisites
+Prerequisites:
 You will need Python 3.8 or higher installed on your system.
-Installation
+Installation:
 Clone the repository to your local machine:
 git clone https://github.com/your-username/ats-score.git
 cd ats-score
